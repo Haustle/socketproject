@@ -1,6 +1,8 @@
 from socket import *
-serverName = '127.0.0.1'
+# serverName = '127.0.0.1'
+serverName = '192.168.1.118'
 serverPort = 4501
+
 
 while True:
     # SOCK_DGRAM means it's a UDP socket
