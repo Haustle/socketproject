@@ -14,12 +14,13 @@ serverPort = int(sys.argv[1])
 # PORT = 40501
 
 registerList = {}
+contactList = {}
 
-contactList = None
+contactFile = None
 if(len(sys.argv) == 3):
-    contactList = sys.argv[2] if (
+    contactFile = sys.argv[2] if (
         sys.argv[2] and sys.argv[2][-4:] == ".txt") else None
-print("Contact list: {}\t".format(contactList), end="") if contactList else None
+print("Contact list: {}\t".format(contactFile), end="") if contactFile else None
 serverSocket = socket(AF_INET, SOCK_DGRAM)
 
 
@@ -38,6 +39,8 @@ def readCommand(command, clientAddr):
             "ip" : regIp,
             "port" : regPort
         }
+    
+        print(regIp)
 
         if(regContactName not in registerList):
             registerList[regContactName] = adFormat
@@ -48,18 +51,39 @@ def readCommand(command, clientAddr):
 
 
     elif(init == "create"):
-        print("You want to create something")
 
-        conList = command_split[1]
+        listName = command_split[1]
+        
+        # if this list name doesn't exist prior we make a new contact list
+        if(listName not in contactList):
+            contactList[listName] = set()
+            serverSocket.sendto("SUCCESS".encode(), clientAddr)
+        else:
+            serverSocket.sendto("FAILURE".encode(), clientAddr)
+
 
     elif(init == "query-lists"):
         # queries the server for the names of the contact lists
         # returns code equal to number of contact lists and names
-        pass
+        serverSocket.sendto("{} {}".format(len(contactList),contactList.keys()).encode(), clientAddr)
+        serverSocket.sendto("SUCCESS".encode(), clientAddr)
+
+
+
 
     elif(init == "join"):
         contactListName = command_split[1]
         contactName = command_split[2]
+
+        if((contactName not in registerList.keys()) or (contactListName not in contactList.keys()) or len(contactList[contactListName]) == 3):
+            serverSocket.sendto("FAILURE".encode(), clientAddr)
+        else:
+            # adding the name to the contact list
+            contactList[contactListName].add(contactName)
+
+            # send a success to the client
+            serverSocket.sendto("SUCCESS".encode(), clientAddr)
+
 
     elif(init == "leave"):
         contactListName = command_split[1]
@@ -77,9 +101,28 @@ def readCommand(command, clientAddr):
         contactName = command_split[2]
 
     elif(init == "save"):
+        linesPrinted = []
         fileName = command_split[1]
+        with open(fileName,'w') as saveFile:
+            saveFile.writelines()
+        activeUsers = len(registerList)
+        numContactList = len(contactList)
+
+        linesPrinted.append(activeUsers)
+        for key, value in registerList.items():
+            line = "{} {} {}".format(value.name, value.ip, value.port)
+            linesPrinted.append(line)
+
+        linesPrinted.append(numContactList)
+        for key,value in contactList.items():
+            line = "{} {}".format(key, len(value))
+            linesPrinted.append(line)
+
+
     else:
         print("Command not found")
+        serverSocket.sendto("This command was not found".encode(), clientAddr)
+
 
 
 def main():
@@ -90,9 +133,9 @@ def main():
 
     while True:
         message, clientAddress = serverSocket.recvfrom(2048)
-        # print(message.decode().upper())
         realMsg = message.decode()
         readCommand(realMsg, clientAddress)
+        print(clientAddress)
         # modifiedMessage = message.decode().upper()
         # serverSocket.sendto(modifiedMessage.encode(), clientAddress)
 
