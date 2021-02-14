@@ -1,7 +1,10 @@
+import sys
 from socket import *
+
 # serverName = '127.0.0.1'
-serverName = '192.168.1.118'
-serverPort = 4501
+# serverName = '192.168.1.118'
+serverIP = sys.argv[1]
+serverPort = int(sys.argv[2])
 
 
 while True:
@@ -10,7 +13,7 @@ while True:
     message = input("Enter a command: ")
 
     # using .encode() to convert the messages to bytes
-    clientSocket.sendto(message.encode(),(serverName, serverPort))
+    clientSocket.sendto(message.encode(), (serverIP, serverPort))
 
     # when a packet arrives at the client socket the data is put into
     # modifiedMessage and the address it was sent from
