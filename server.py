@@ -123,6 +123,13 @@ def readCommand(command, clientAddr):
         for key,value in contactList.items():
             line = "{} {}".format(key, len(value))
             linesPrinted.append(line)
+
+            for person in value:
+                personInfo = registerList[person]
+                line = "{} {} {}".format(personInfo["name"], personInfo["ip"], personInfo["port"])
+                linesPrinted.append(line)
+
+
         linesPrinted = [line + "\n" for line in linesPrinted]
         saveFile.writelines(linesPrinted)
 
