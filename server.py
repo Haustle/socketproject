@@ -95,7 +95,7 @@ def readCommand(command, clientAddr):
         for key, value in contactList.items():
             if contactName in value:
                 value.remove(contactName)
-                
+
         serverSocket.sendto("SUCCESS".encode(), clientAddr)
 
 
@@ -110,20 +110,21 @@ def readCommand(command, clientAddr):
     elif(init == "save"):
         linesPrinted = []
         fileName = command_split[1]
-        with open(fileName,'w') as saveFile:
-            saveFile.writelines()
-        activeUsers = len(registerList)
-        numContactList = len(contactList)
+        saveFile = open(fileName,'w')
+        activeUsers = str(len(registerList))
+        numContactList = str(len(contactList))
 
         linesPrinted.append(activeUsers)
         for key, value in registerList.items():
-            line = "{} {} {}".format(value.name, value.ip, value.port)
+            line = "{} {} {}".format(value["name"], value["ip"], value["port"])
             linesPrinted.append(line)
 
         linesPrinted.append(numContactList)
         for key,value in contactList.items():
             line = "{} {}".format(key, len(value))
             linesPrinted.append(line)
+        linesPrinted = [line + "\n" for line in linesPrinted]
+        saveFile.writelines(linesPrinted)
 
 
     else:
@@ -142,7 +143,7 @@ def main():
         message, clientAddress = serverSocket.recvfrom(2048)
         realMsg = message.decode()
         readCommand(realMsg, clientAddress)
-        print(clientAddress)
+
         # modifiedMessage = message.decode().upper()
         # serverSocket.sendto(modifiedMessage.encode(), clientAddress)
 
