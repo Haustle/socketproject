@@ -6,12 +6,11 @@
 
 from socket import *
 import sys
-HOST = '127.0.0.1'
 serverPort = int(sys.argv[1])
 
 # We're group number 79
 # So we own port ranges [40500,40999]
-# PORT = 40501
+
 
 registerList = {}
 contactList = {}
@@ -29,7 +28,7 @@ def readCommand(command, clientAddr):
     init = command_split[0].lower()
 
     if(init == "register"):
-        print("You want to register something")
+
         regContactName = command_split[1]
         regIp = command_split[2]
         regPort = command_split[3]
@@ -69,13 +68,11 @@ def readCommand(command, clientAddr):
         serverSocket.sendto("SUCCESS".encode(), clientAddr)
 
 
-
-
     elif(init == "join"):
         contactListName = command_split[1]
         contactName = command_split[2]
 
-        if((contactName not in registerList.keys()) or (contactListName not in contactList.keys()) or len(contactList[contactListName]) == 3):
+        if((contactName not in registerList.keys()) or (contactListName not in contactList.keys()) or len(contactList[contactListName]) == 3 or contactName in contactList[contactListName]):
             serverSocket.sendto("FAILURE".encode(), clientAddr)
         else:
             # adding the name to the contact list
@@ -133,6 +130,7 @@ def readCommand(command, clientAddr):
         linesPrinted = [line + "\n" for line in linesPrinted]
         saveFile.writelines(linesPrinted)
 
+        serverSocket.sendto("SUCCESS".encode(), clientAddr)
 
     else:
         print("Command not found")
@@ -144,7 +142,7 @@ def main():
     print("PORT NUM: {}".format(serverPort))
 
     serverSocket.bind(('', serverPort))
-    print("The server is ready to receive")
+
 
     while True:
         message, clientAddress = serverSocket.recvfrom(2048)
