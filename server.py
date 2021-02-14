@@ -91,6 +91,13 @@ def readCommand(command, clientAddr):
 
     elif(init == "exit"):
         contactName = command_split[1]
+        del registerList[contactName]
+        for key, value in contactList.items():
+            if contactName in value:
+                value.remove(contactName)
+                
+        serverSocket.sendto("SUCCESS".encode(), clientAddr)
+
 
     elif(init == "im-start"):
         contactListName = command_split[1]
