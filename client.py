@@ -1,8 +1,8 @@
 import sys
 from socket import *
 
-# serverName = '127.0.0.1'
-# serverName = '192.168.1.118'
+
+
 serverIP = sys.argv[1]
 serverPort = int(sys.argv[2])
 
