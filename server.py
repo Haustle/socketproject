@@ -7,14 +7,27 @@
 from socket import *
 import sys
 serverPort = int(sys.argv[1])
+import time
 
 # We're group number 79
 # So we own port ranges [40500,40999]
 
 
 # this is the register list and contact list dictionaries
-registerList = {}
+registerList = {
+    "p1" : {
+        "name" : "p1",
+        "ip": "127.0.0.1",
+        "port": "40501"
+    },
+    "p2": {
+        "name": "p2",
+        "ip": "127.0.0.1",
+        "port": "40502"
+    }
+}
 contactList = {}
+activeText = set()
 
 # this will be a command line argument later on when we start IM part
 contactFile = None
@@ -50,7 +63,7 @@ def readCommand(command, clientAddr):
         # check to see if the name already exists
         if(regContactName not in registerList):
             registerList[regContactName] = adFormat
-            serverSocket.sendto("SUCCESS".encode(),clientAddr)
+            serverSocket.sendto("\nSUCCESS".encode(),clientAddr)
         else:
             serverSocket.sendto("FAILURE".encode(), clientAddr)
 
@@ -63,7 +76,7 @@ def readCommand(command, clientAddr):
         # if this list name doesn't exist prior we make a new contact list
         if(listName not in contactList):
             contactList[listName] = set()
-            serverSocket.sendto("SUCCESS".encode(), clientAddr)
+            serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
         else:
             serverSocket.sendto("FAILURE".encode(), clientAddr)
 
@@ -82,38 +95,113 @@ def readCommand(command, clientAddr):
 
         # conditions for if the person cannot join
         if((contactName not in registerList.keys()) or (contactListName not in contactList.keys()) or len(contactList[contactListName]) == 3 or contactName in contactList[contactListName]):
-            serverSocket.sendto("FAILURE".encode(), clientAddr)
+            serverSocket.sendto("\nFAILURE".encode(), clientAddr)
         else:
             # adding the name to the contact list
             contactList[contactListName].add(contactName)
 
             # send a success to the client
-            serverSocket.sendto("SUCCESS".encode(), clientAddr)
+            serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
 
 
     elif(init == "leave"):
         contactListName = command_split[1]
         contactName = command_split[2]
+        if( contactListName not in contactList or contactName not in contactList[contactListName]):
+            serverSocket.sendto("\nFAILURE".encode(), clientAddr)
+            return
+
+        contactList[contactListName].remove(contactName)
+        serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
+
 
     # removing a user from all contact list and putting them to unactive
     elif(init == "exit"):
         # we take in the contact name
         contactName = command_split[1]
-        del registerList[contactName]
+
+
+        # check to see if
+        for onIm in activeText:
+            if(contactName in contactList[onIm]):
+                serverSocket.sendto("\nFAILURE".encode(), clientAddr)
+                del registerList[contactName]
+                return
+                
         for key, value in contactList.items():
             if contactName in value:
                 value.remove(contactName)
 
-        serverSocket.sendto("SUCCESS".encode(), clientAddr)
+        serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
 
 
     elif(init == "im-start"):
         contactListName = command_split[1]
         contactName = command_split[2]
 
+        if(contactName not in contactList[contactListName]):
+            serverSocket.sendto("\nFAILURE".encode(), clientAddr)
+            serverSocket.sendto("0".encode(), clientAddr)
+            return
+
+        # we prompt the user for a message
+        # here we need to make a json object that can hold the message
+        serverSocket.sendto("\nType msg as next command".encode(), clientAddr)
+        # we capture the msg they want to send
+        message, clientAddress = serverSocket.recvfrom(2048)
+        actMsg = message.decode()
+
+        # for each person in the list we're going to print out their details.
+
+
+        serverSocket.sendto(("\n{}".format(len(contactList[contactListName]))).encode(), clientAddr)
+        for person in contactList[contactListName]:
+            if(contactName == person):
+                personInfo = registerList[person]
+                line = "{} {} {}".format(personInfo["name"], personInfo["ip"], personInfo["port"])
+                serverSocket.sendto(("{}".format(line)).encode(), clientAddr)
+                break
+
+
+        for person in contactList[contactListName]:
+            if(contactName != person):
+                personInfo = registerList[person]
+                line = "{} {} {}".format(personInfo["name"], personInfo["ip"], personInfo["port"])
+                serverSocket.sendto(("{}".format(line)).encode(), clientAddr)
+
+            # print(line)
+            # add personal details to linesPrinted so it can get printed
+
+            
+        # we find the group of people they want to send the message to
+
+        setOfGroupMembers = list(contactList[contactListName])
+        ipForm = ["{}-{}".format(registerList[name]["ip"],registerList[name]["port"]) for name in setOfGroupMembers]
+
+        tempList = ipForm
+        tempList.remove('{}-{}'.format(clientAddr[0], clientAddr[1]))
+        newStr = ";".join(ipForm)
+        print(newStr)
+
+        # print("This is the group: {}".format(setOfGroupMembers))
+        # print("addrs: {}".format(ipForm))
+
+        header = "im-start ={}: {}`{}".format(contactName,actMsg, newStr)
+        print("Header sent: {}".format(header))
+
+        # send the packaged header to the person requesting the im-start
+        serverSocket.sendto(("{}".format(header)).encode(), clientAddr)
+        # print("We sent the header")
+        # we need to package the msg and a header containing all of the members of the group
+        # 
+
+
+
     elif(init == "im-complete"):
         contactListName = command_split[1]
         contactName = command_split[2]
+
+
 
     # save IM structure to .txt file
     elif(init == "save"):
@@ -162,7 +250,6 @@ def readCommand(command, clientAddr):
         serverSocket.sendto("SUCCESS".encode(), clientAddr)
 
     else:
-        print("Command not found")
         serverSocket.sendto("This command was not found".encode(), clientAddr)
 
 
@@ -179,8 +266,10 @@ def main():
         # print out the message received
         print("Server receives string: {}".format(realMsg))
         # and where the message came from
-        print("Server handling client: {}".format(clientAddress[0]))
+        print("Server handling client: {} PORT: {}".format(clientAddress[0], clientAddress[1]))
         readCommand(realMsg, clientAddress)
+        # serverSocket.sendto("Completed request".encode(),clientAddress)
+        # time.sleep(3)
 
 
 main()
