@@ -148,7 +148,7 @@ def readCommand(command, clientAddr):
         contactListName = command_split[1]
         contactName = command_split[2]
 
-        if(contactName not in contactList[contactListName] or contactListName in activeText.keys() and contactName != activeText[contactFile]):
+        if(contactName not in contactList[contactListName] or contactListName in activeText.keys() and contactName != activeText[contactListName]):
             serverSocket.sendto("\nFAILURE".encode(), clientAddr)
             serverSocket.sendto("0".encode(), clientAddr)
             return
