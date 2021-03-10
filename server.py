@@ -15,19 +15,24 @@ import time
 
 # this is the register list and contact list dictionaries
 registerList = {
-    "p1" : {
-        "name" : "p1",
-        "ip": "127.0.0.1",
-        "port": "40501"
-    },
-    "p2": {
-        "name": "p2",
-        "ip": "127.0.0.1",
-        "port": "40502"
-    }
+    # "p1" : {
+    #     "name" : "p1",
+    #     "ip": "127.0.0.1",
+    #     "port": "40501"
+    # },
+    # "p2": {
+    #     "name": "p2",
+    #     "ip": "127.0.0.1",
+    #     "port": "40502"
+    # },
+    # "p3": {
+    #     "name": "p3",
+    #     "ip": "127.0.0.1",
+    #     "port": "40503"
+    # }
 }
 contactList = {}
-activeText = set()
+activeText = {}
 
 # this will be a command line argument later on when we start IM part
 contactFile = None
@@ -121,13 +126,16 @@ def readCommand(command, clientAddr):
         contactName = command_split[1]
 
 
-        # check to see if
-        for onIm in activeText:
-            if(contactName in contactList[onIm]):
+        # check to see if the name is in a current on going text
+        for key,value in activeText.items():
+            if(contactName in contactList[key]):
                 serverSocket.sendto("\nFAILURE".encode(), clientAddr)
+
+                # deregister the user
                 del registerList[contactName]
                 return
-                
+        
+        # remove the user from all contactLists
         for key, value in contactList.items():
             if contactName in value:
                 value.remove(contactName)
@@ -146,6 +154,7 @@ def readCommand(command, clientAddr):
 
         # we prompt the user for a message
         # here we need to make a json object that can hold the message
+        activeText[contactListName] = contactName
         serverSocket.sendto("\nType msg as next command".encode(), clientAddr)
         # we capture the msg they want to send
         message, clientAddress = serverSocket.recvfrom(2048)
@@ -179,27 +188,40 @@ def readCommand(command, clientAddr):
         ipForm = ["{}-{}".format(registerList[name]["ip"],registerList[name]["port"]) for name in setOfGroupMembers]
 
         tempList = ipForm
+
+        # remove the caller and then add them to the end of the list, so it can make sure all messages have been sent
         tempList.remove('{}-{}'.format(clientAddr[0], clientAddr[1]))
+        tempList.append('{}-{}'.format(clientAddr[0], clientAddr[1]))
         newStr = ";".join(ipForm)
         print(newStr)
 
-        # print("This is the group: {}".format(setOfGroupMembers))
-        # print("addrs: {}".format(ipForm))
 
-        header = "im-start ={}: {}`{}".format(contactName,actMsg, newStr)
+
+        # create a header to send to users in the group
+        header = "im-start =[{}] {}: {}`{}".format(contactListName,contactName,actMsg, newStr)
         print("Header sent: {}".format(header))
 
         # send the packaged header to the person requesting the im-start
         serverSocket.sendto(("{}".format(header)).encode(), clientAddr)
-        # print("We sent the header")
-        # we need to package the msg and a header containing all of the members of the group
-        # 
+
 
 
 
     elif(init == "im-complete"):
         contactListName = command_split[1]
         contactName = command_split[2]
+
+        # we make a check to make sure the person requesting the im-complete is the one who use im-start
+        if(contactName == activeText[contactListName]):
+
+            del activeText[contactListName]
+            serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
+        else:
+            serverSocket.sendto("\FAILURE".encode(), clientAddr)
+
+
+        # we remove the group from active
+
 
 
 

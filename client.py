@@ -7,7 +7,8 @@ import multiprocessing
 serverIP = sys.argv[1]
 serverPort = int(sys.argv[2])
 clientSocket = socket(AF_INET, SOCK_DGRAM)
-clientSocket.bind(('',40501))
+clientSocket.bind(('', int(sys.argv[3])))
+
 
 def somefun():
     while True:
@@ -36,8 +37,6 @@ def somefun():
 
             # we remove the ip that we're sending to for the new header
             rePackedHeader = "im-start={}`{}".format(msg2send,";".join(ips2send[1:]))
-            # print("Sending to ip: {} port: {}".format(recIp, recPort))
-            # print("new head: {}".format(rePackedHeader))
             clientSocket.sendto(rePackedHeader.encode(),(recIp,recPort))
             continue
 
@@ -46,7 +45,6 @@ def somefun():
 
 def main():
     
-    # p1 = multiprocessing.Process(target=somefun)
     multiprocessing.Process(target=somefun).start()
 
     # p1.start()
