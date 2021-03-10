@@ -14,6 +14,8 @@ def somefun():
     while True:
         modifiedMessage, serverAddress = clientSocket.recvfrom(2048)
         actualMsg = (modifiedMessage.decode())
+
+        # we distinguish all im messages with the 'im-start' header
         if(actualMsg.startswith('im-start')):
 
             msgAndIps = (actualMsg.split("=")[1]).split('`')
@@ -45,18 +47,13 @@ def somefun():
 
 def main():
     
+    # kick off the multiprocessing function
     multiprocessing.Process(target=somefun).start()
 
-    # p1.start()
     while True:
+        # enter message loop
         message = input("Enter a command: ")
         if(message != ""):
             clientSocket.sendto(message.encode(), (serverIP, serverPort))
-
-
-
-
-
-
 
 main()

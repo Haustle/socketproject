@@ -14,23 +14,7 @@ import time
 
 
 # this is the register list and contact list dictionaries
-registerList = {
-    # "p1" : {
-    #     "name" : "p1",
-    #     "ip": "127.0.0.1",
-    #     "port": "40501"
-    # },
-    # "p2": {
-    #     "name": "p2",
-    #     "ip": "127.0.0.1",
-    #     "port": "40502"
-    # },
-    # "p3": {
-    #     "name": "p3",
-    #     "ip": "127.0.0.1",
-    #     "port": "40503"
-    # }
-}
+registerList = {}
 contactList = {}
 activeText = {}
 
@@ -112,6 +96,7 @@ def readCommand(command, clientAddr):
     elif(init == "leave"):
         contactListName = command_split[1]
         contactName = command_split[2]
+        # we check to see if the list actually exists and if the user is in the contactList
         if( contactListName not in contactList or contactName not in contactList[contactListName]):
             serverSocket.sendto("\nFAILURE".encode(), clientAddr)
             return
@@ -133,7 +118,8 @@ def readCommand(command, clientAddr):
 
                 # deregister the user
                 return
-                
+        
+        # remove the user from register list
         del registerList[contactName]
 
         # remove the user from all contactLists
@@ -165,6 +151,8 @@ def readCommand(command, clientAddr):
 
 
         serverSocket.sendto(("\n{}".format(len(contactList[contactListName]))).encode(), clientAddr)
+
+        # we pring the first person :)
         for person in contactList[contactListName]:
             if(contactName == person):
                 personInfo = registerList[person]
@@ -172,7 +160,7 @@ def readCommand(command, clientAddr):
                 serverSocket.sendto(("{}".format(line)).encode(), clientAddr)
                 break
 
-
+        # print out all the other ones
         for person in contactList[contactListName]:
             if(contactName != person):
                 personInfo = registerList[person]
@@ -196,17 +184,12 @@ def readCommand(command, clientAddr):
         newStr = ";".join(ipForm)
         print(newStr)
 
-
-
         # create a header to send to users in the group
         header = "im-start =[{}] {}: {}`{}".format(contactListName,contactName,actMsg, newStr)
         print("Header sent: {}".format(header))
 
         # send the packaged header to the person requesting the im-start
         serverSocket.sendto(("{}".format(header)).encode(), clientAddr)
-
-
-
 
     elif(init == "im-complete"):
         contactListName = command_split[1]
@@ -219,11 +202,6 @@ def readCommand(command, clientAddr):
             serverSocket.sendto("\nSUCCESS".encode(), clientAddr)
         else:
             serverSocket.sendto("\FAILURE".encode(), clientAddr)
-
-
-        # we remove the group from active
-
-
 
 
     # save IM structure to .txt file
@@ -280,19 +258,18 @@ def readCommand(command, clientAddr):
 def main():
     print("PORT NUM: {}".format(serverPort))
 
+    # we bind the command line port number to actual socket
     serverSocket.bind(('', serverPort))
-
-
     while True:
+        # always waiting to receivmessages
         message, clientAddress = serverSocket.recvfrom(2048)
         realMsg = message.decode()
+
         # print out the message received
         print("Server receives string: {}".format(realMsg))
         # and where the message came from
         print("Server handling client: {} PORT: {}".format(clientAddress[0], clientAddress[1]))
         readCommand(realMsg, clientAddress)
-        # serverSocket.sendto("Completed request".encode(),clientAddress)
-        # time.sleep(3)
 
 
 main()
